@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tamizaje Neonatal – Mini App</title>
+  <meta name="description" content="Video y explicación breve sobre el tamizaje neonatal para fines educativos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      /* Nueva Paleta de Colores: Índigo y Fucsia */
+      --bg: #1e1b4b;          /* indigo-950 */
+      --card: #312e81;        /* indigo-900 */
+      --muted: #94a3b8;      /* slate-400 */
+      --text: #e2e8f0;        /* slate-200 */
+      --accent: #d946ef;      /* fuchsia-500 */
+      --success: #22c55e;     /* green-500 */
+      --danger: #ef4444;      /* red-500 */
+      --ring: rgba(217, 70, 239, .35);
+      --gemini-bg: #3730a3;   /* indigo-800 */
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+      color: var(--text);
+      background: radial-gradient(1000px 800px at 15% -15%, #a21caf 0%, transparent 40%),
+                  radial-gradient(900px 700px at 110% 10%, #6d28d9 0%, transparent 40%),
+                  var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container { max-width: 880px; margin: 32px auto; padding: 0 16px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    h1 { font-size: clamp(24px, 4vw, 34px); margin: 0; letter-spacing: .2px; }
+    .pill { font-weight: 600; color: #5b21b6; background: #f5d0fe; border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+    
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, .35);
+      overflow: hidden;
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+    .card .body { padding: 24px; }
+    
+    .video-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+    .video-frame iframe, .video-frame video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    
+    .meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, .08); background: rgba(0,0,0,0.1); }
+    .meta .left { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px var(--ring); }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    
+    .explain { font-size: clamp(16px, 2.6vw, 18px); line-height: 1.6; color: #eef2ff; margin: 0 0 24px 0; }
+    
+    footer { color: var(--muted); font-size: 13px; margin-top: 24px; text-align: center; max-width: 600px; margin-left: auto; margin-right: auto;}
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      color: #ffffff;
+      background: var(--accent);
+      border: 1px solid rgba(0, 0, 0, .08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 15px;
+    }
+    .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+    .btn.copied { background: var(--success); color: white; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .small { font-size: 12px; color: var(--muted); }
+    
+    /* Estilos para funciones de Gemini */
+    .gemini-actions { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; }
+    .btn-gemini {
+        background: var(--gemini-bg);
+        color: var(--accent);
+        border: 1px solid #4f46e5;
+    }
+    .btn-gemini:hover {
+        background: #4338ca;
+    }
+    
+    #gemini-output {
+        background-color: var(--gemini-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #4f46e5;
+        font-size: 16px;
+        line-height: 1.7;
+    }
+    #gemini-output h3 {
+        margin-top: 0;
+        color: var(--accent);
+    }
+    #gemini-output ul { padding-left: 20px; }
+    #gemini-output ul li::marker { color: var(--accent); }
+
+    /* Estilos del Cuestionario Interactivo */
+    .quiz-question { margin-bottom: 20px; }
+    .quiz-question p { margin: 0 0 10px 0; font-weight: 600; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-option {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #4f46e5;
+        background-color: #4338ca;
+        color: var(--text);
+        text-align: left;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .quiz-option:hover:not(:disabled) { background-color: #4f46e5; }
+    .quiz-option.correct { background-color: var(--success); color: white; border-color: var(--success); }
+    .quiz-option.incorrect { background-color: var(--danger); color: white; border-color: var(--danger); }
+    .quiz-option:disabled { cursor: not-allowed; opacity: 0.7; }
+
+    #gemini-output .loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+    }
+    #gemini-output .loader-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Estilos del Modal QR */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+    .modal-content {
+      background: var(--card);
+      padding: 30px;
+      border-radius: 16px;
+      border: 1px solid #4f46e5;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      width: 90%;
+      max-width: 400px;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    .modal-content p {
+      color: var(--muted);
+      margin-bottom: 15px;
+    }
+    #qrcode {
+      margin: 20px auto;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #qrcode img {
+      display: block;
+      margin: auto;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #4f46e5;
+      background-color: #1e1b4b;
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .modal-generate-btn {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="app-title">Tamizaje Neonatal</h1>
+      <span class="pill">Recurso</span>
+    </header>
+
+    <article class="card" aria-labelledby="app-title">
+      <div id="player" class="video-frame" aria-label="Reproductor de video"></div>
+      
+      <div class="body">
+        <div class="actions">
+          <a id="open-video" class="btn" href="#" target="_blank" rel="noopener">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <span>Abrir enlace</span>
+          </a>
+          <button id="share-link" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copiar enlace</span>
+          </button>
+          <button id="share-qr" class="btn">
+             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Código QR</span>
+          </button>
+        </div>
+        <p id="descripcion" class="explain"></p>
+
+        <div class="gemini-actions">
+           <button id="generate-points" class="btn btn-gemini">✨ Generar Puntos Clave</button>
+           <button id="generate-quiz" class="btn btn-gemini">✨ Crear Cuestionario</button>
+        </div>
+
+        <div id="gemini-output" style="display: none;"></div>
+      </div>
+      
+      <div class="meta">
+        <div class="left">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="subtitle">Recurso educativo • Uso académico</span>
+        </div>
+        <span class="small">Móvil y Desktop</span>
+      </div>
+    </article>
+
+    <footer>
+      <p class="small">Este recurso es sólo para fines educativos. Verifica siempre las guías locales y fuentes oficiales antes de usar material clínico en práctica real.</p>
+    </footer>
+  </div>
+  
+  <div id="qr-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button id="close-qr" class="close-btn">&times;</button>
+      <h3>Generar Código QR Público</h3>
+      <p>Pega la URL pública de esta app (ej. de GitHub Pages) para crear un QR funcional.</p>
+      <input type="url" id="public-url-input" class="modal-input" placeholder="https://tu-usuario.github.io/tu-repo/">
+      <button id="generate-qr-btn" class="btn modal-generate-btn">Generar QR</button>
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+  <script>
+    // ======== CONFIGURA AQUÍ ========
+    const CONFIG = {
+      titulo: "Tamizaje Visual Neonatal",
+      videoUrl: "https://youtube.com/shorts/GIDOrIweEXQ?feature=share",
+      descripcion: "Este video explica el procedimiento y la importancia del tamizaje visual en recién nacidos para detectar a tiempo posibles problemas de visión y asegurar un desarrollo saludable."
+    };
+    // =================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initAppWithConfig();
+      renderPlayer(CONFIG.videoUrl);
+      // Eventos de botones
+      document.getElementById('share-link').addEventListener('click', copyLink);
+      document.getElementById('generate-points').addEventListener('click', handleGeneratePoints);
+      document.getElementById('generate-quiz').addEventListener('click', handleGenerateQuiz);
+      initQrCodeModal();
+    });
+    
+    function initAppWithConfig() {
+        document.title = `${CONFIG.titulo} – Mini App`;
+        document.getElementById('app-title').textContent = CONFIG.titulo;
+        document.getElementById('descripcion').innerHTML = CONFIG.descripcion;
+        document.getElementById('open-video').href = CONFIG.videoUrl || '#';
+    }
+
+    function isYouTube(url) {
+      try { const u = new URL(url); return /youtube\.com|youtu\.be/.test(u.hostname); } catch { return false; }
+    }
+
+    function extractYouTubeId(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+        if (u.searchParams.has('v')) return u.searchParams.get('v');
+        const match = u.pathname.match(/\/(embed|shorts)\/([^\/\?]+)/);
+        return match && match[2] ? match[2] : null;
+      } catch { return null; }
+    }
+
+    function renderPlayer(url) {
+        const container = document.getElementById('player');
+        container.innerHTML = '';
+        if (!url || url.trim() === '' || url.includes('REEMPLAZA')) {
+            container.innerHTML = `<div style="display: grid; place-items: center; height: 100%; color: #94a3b8; font-size: 14px; padding: 1rem; text-align: center;">Configura CONFIG.videoUrl con tu enlace de YouTube.</div>`;
+            return;
+        }
+        if (isYouTube(url)) {
+            const id = extractYouTubeId(url);
+            if (id) {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1&autoplay=0`;
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.allowFullscreen = true;
+                iframe.loading = 'lazy';
+                container.appendChild(iframe);
+            }
+        } else {
+            const video = document.createElement('video');
+            video.controls = true; video.playsInline = true; video.preload = 'metadata'; video.src = url;
+            video.setAttribute('aria-label', CONFIG.titulo);
+            container.appendChild(video);
+        }
+    }
+
+    function copyLink() {
+      const btn = document.getElementById('share-link');
+      const originalText = btn.querySelector('span').textContent;
+      const textArea = document.createElement('textarea');
+      textArea.value = location.href;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            btn.classList.add('copied');
+            btn.querySelector('span').textContent = '¡Copiado!';
+            setTimeout(() => {
+              btn.classList.remove('copied');
+              btn.querySelector('span').textContent = originalText;
+            }, 2000);
+        }
+      } catch (err) { console.error('Error al copiar', err); }
+      document.body.removeChild(textArea);
+    }
+
+    // --- LÓGICA DEL CÓDIGO QR ---
+    function initQrCodeModal() {
+        const openModalBtn = document.getElementById('share-qr');
+        const qrModal = document.getElementById('qr-modal');
+        const closeModalBtn = document.getElementById('close-qr');
+        const generateQrBtn = document.getElementById('generate-qr-btn');
+        const urlInput = document.getElementById('public-url-input');
+        const qrcodeContainer = document.getElementById('qrcode');
+
+        openModalBtn.addEventListener('click', () => {
+            qrModal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => qrModal.style.display = 'none');
+        
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) {
+                qrModal.style.display = 'none';
+            }
+        });
+
+        generateQrBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (url) {
+                qrcodeContainer.innerHTML = "";
+                new QRCode(qrcodeContainer, {
+                    text: url,
+                    width: 220,
+                    height: 220,
+                    colorDark: "#1e1b4b",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                alert("Por favor, ingresa una URL pública.");
+            }
+        });
+    }
+
+    // --- FUNCIONES DE LA API DE GEMINI ---
+    const geminiOutput = document.getElementById('gemini-output');
+
+    function showLoader(message) {
+        geminiOutput.style.display = 'block';
+        geminiOutput.innerHTML = `<div class="loader"><div class="loader-spinner"></div><span>${message}</span></div>`;
+    }
+
+    async function callGeminiAPI(prompt, generationConfig = null, retries = 3, delay = 1000) {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            ...(generationConfig && { generationConfig })
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const result = await response.json();
+            return result.candidates[0].content.parts[0].text;
+        } catch (error) {
+            console.error("Error en la llamada a Gemini:", error);
+            if (retries > 0) {
+                await new Promise(res => setTimeout(res, delay));
+                return callGeminiAPI(prompt, generationConfig, retries - 1, delay * 2);
+            }
+            return "Lo siento, no se pudo generar una respuesta en este momento.";
+        }
+    }
+
+    async function handleGeneratePoints() {
+        showLoader('Generando puntos clave...');
+        const prompt = `Eres un asistente educativo. Basado en el siguiente texto, extrae los 3 puntos clave más importantes y preséntalos como una lista simple con viñetas (usando Markdown con *). El texto es: "${CONFIG.descripcion}"`;
+        const response = await callGeminiAPI(prompt);
+        geminiOutput.innerHTML = `<h3>Puntos Clave</h3>${formatMarkdownList(response)}`;
+    }
+
+
+
+    async function handleGenerateQuiz() {
+        showLoader('Creando cuestionario...');
+        const quizSchema = {
+            "type": "OBJECT",
+            "properties": { "questions": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { "question_text": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "correct_answer_index": { "type": "NUMBER" } }, "required": ["question_text", "options", "correct_answer_index"] } } }
+        };
+        const prompt = `Crea un cuestionario de 2 preguntas de opción múltiple (con 3 opciones cada una) para evaluar la comprensión del siguiente texto: "${CONFIG.descripcion}". Devuelve el resultado como un objeto JSON que siga el esquema proporcionado.`;
+        const generationConfig = { responseMimeType: "application/json", responseSchema: quizSchema };
+        
+        const response = await callGeminiAPI(prompt, generationConfig);
+        try {
+            const quizData = JSON.parse(response);
+            renderQuiz(quizData);
+        } catch (e) {
+            console.error("Error al parsear el JSON del cuestionario:", e);
+            geminiOutput.innerHTML = "Hubo un error al generar el cuestionario. Intenta de nuevo.";
+        }
+    }
+
+    function renderQuiz(quizData) {
+        geminiOutput.innerHTML = '<h3>Cuestionario Rápido</h3>';
+        quizData.questions.forEach((q, index) => {
+            const questionEl = document.createElement('div');
+            questionEl.className = 'quiz-question';
+            questionEl.innerHTML = `<p>${index + 1}. ${q.question_text}</p>`;
+            
+            const optionsEl = document.createElement('div');
+            optionsEl.className = 'quiz-options';
+            
+            q.options.forEach((option, optionIndex) => {
+                const optionBtn = document.createElement('button');
+                optionBtn.className = 'quiz-option';
+                optionBtn.textContent = option;
+                optionBtn.dataset.index = optionIndex;
+                optionBtn.addEventListener('click', (e) => handleOptionClick(e, q.correct_answer_index));
+                optionsEl.appendChild(optionBtn);
+            });
+            
+            questionEl.appendChild(optionsEl);
+            geminiOutput.appendChild(questionEl);
+        });
+    }
+
+    function handleOptionClick(event, correctIndex) {
+        const selectedBtn = event.target;
+        const selectedIndex = parseInt(selectedBtn.dataset.index, 10);
+        const optionsContainer = selectedBtn.parentElement;
+        const allOptions = optionsContainer.querySelectorAll('.quiz-option');
+
+        allOptions.forEach((btn, index) => {
+            btn.disabled = true;
+            if (index === correctIndex) btn.classList.add('correct');
+        });
+
+        if (selectedIndex !== correctIndex) selectedBtn.classList.add('incorrect');
+    }
+    
+    function formatMarkdownList(text) {
+        text = text.replace(/^\s*\*\s*(.*)/gm, '<ul><li>$1</li></ul>');
+        text = text.replace(/<\/ul>\s*<ul>/g, '');
+        return text.replace(/\n/g, '<br>');
+    }
+  </script>
+</body>
+</html>
+
