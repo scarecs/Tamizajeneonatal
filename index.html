@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tamizaje Neonatal – Mini App</title>
-  <meta name="description" content="Video y explicación breve sobre el tamizaje neonatal para fines educativos." />
+  <title>Recursos Educativos – Mini App</title>
+  <meta name="description" content="Videos y explicaciones breves sobre temas educativos." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -95,6 +95,32 @@
     .btn.copied { background: var(--success); color: white; }
     .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
     .small { font-size: 12px; color: var(--muted); }
+
+    /* Estilos del Selector de Video */
+    .video-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .video-selector-btn {
+        background-color: var(--gemini-bg);
+        color: var(--text);
+        border: 1px solid #4f46e5;
+        padding: 10px 15px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .video-selector-btn:hover {
+        background-color: #4338ca;
+    }
+    .video-selector-btn.active {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
     
     /* Estilos para funciones de Gemini */
     .gemini-actions { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; }
@@ -234,9 +260,13 @@
 <body>
   <div class="container">
     <header>
-      <h1 id="app-title">Tamizaje Neonatal</h1>
+      <h1 id="app-title">Cargando...</h1>
       <span class="pill">Recurso</span>
     </header>
+    
+    <div class="video-selector" id="video-selector">
+      <!-- Botones de video se generan aquí -->
+    </div>
 
     <article class="card" aria-labelledby="app-title">
       <div id="player" class="video-frame" aria-label="Reproductor de video"></div>
@@ -294,27 +324,67 @@
   <script>
     // ======== CONFIGURA AQUÍ ========
     const CONFIG = {
-      titulo: "Tamizaje Visual Neonatal",
-      videoUrl: "https://youtube.com/shorts/GIDOrIweEXQ?feature=share",
-      descripcion: "Este video explica el procedimiento y la importancia del tamizaje visual en recién nacidos para detectar a tiempo posibles problemas de visión y asegurar un desarrollo saludable."
+      videos: [
+        {
+          id: 'oftalmologico',
+          titulo: "Tamizaje Oftalmológico Neonatal",
+          videoUrl: "https://www.youtube.com/shorts/8TLJ5GatpVk?feature=share",
+          descripcion: "Este video corto demuestra el procedimiento del tamizaje oftalmológico en recién nacidos, una prueba crucial para detectar tempranamente problemas visuales como cataratas congénitas y garantizar un desarrollo visual saludable."
+        },
+        {
+          id: 'ojo-rojo',
+          titulo: "El Ojo Rojo",
+          videoUrl: "https://www.youtube.com/shorts/-6HLaxLTZiw?feature=share",
+          descripcion: "Este video corto presenta las causas comunes del 'ojo rojo', una condición frecuente. Explica brevemente los signos a los que hay que prestar atención y la importancia de un diagnóstico adecuado para un tratamiento efectivo."
+        }
+      ]
     };
     // =================================
+    
+    let currentVideo; // Variable para mantener el estado del video actual
 
     document.addEventListener('DOMContentLoaded', () => {
-      initAppWithConfig();
-      renderPlayer(CONFIG.videoUrl);
-      // Eventos de botones
-      document.getElementById('share-link').addEventListener('click', copyLink);
-      document.getElementById('generate-points').addEventListener('click', handleGeneratePoints);
-      document.getElementById('generate-quiz').addEventListener('click', handleGenerateQuiz);
-      initQrCodeModal();
+      initApp();
     });
     
-    function initAppWithConfig() {
-        document.title = `${CONFIG.titulo} – Mini App`;
-        document.getElementById('app-title').textContent = CONFIG.titulo;
-        document.getElementById('descripcion').innerHTML = CONFIG.descripcion;
-        document.getElementById('open-video').href = CONFIG.videoUrl || '#';
+    function initApp() {
+        const selectorContainer = document.getElementById('video-selector');
+        CONFIG.videos.forEach(video => {
+            const btn = document.createElement('button');
+            btn.className = 'video-selector-btn';
+            btn.textContent = video.titulo;
+            btn.dataset.videoId = video.id;
+            btn.addEventListener('click', () => loadVideo(video.id));
+            selectorContainer.appendChild(btn);
+        });
+
+        loadVideo(CONFIG.videos[0].id);
+
+        document.getElementById('share-link').addEventListener('click', copyLink);
+        initQrCodeModal();
+    }
+    
+    function loadVideo(videoId) {
+        currentVideo = CONFIG.videos.find(v => v.id === videoId);
+        if (!currentVideo) return;
+
+        document.title = `${currentVideo.titulo} – Mini App`;
+        document.getElementById('app-title').textContent = currentVideo.titulo;
+        document.getElementById('descripcion').innerHTML = currentVideo.descripcion;
+        document.getElementById('open-video').href = currentVideo.videoUrl || '#';
+
+        document.querySelectorAll('.video-selector-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.videoId === videoId);
+        });
+
+        renderPlayer(currentVideo.videoUrl);
+
+        const geminiOutput = document.getElementById('gemini-output');
+        geminiOutput.style.display = 'none';
+        geminiOutput.innerHTML = '';
+
+        document.getElementById('generate-points').onclick = handleGeneratePoints;
+        document.getElementById('generate-quiz').onclick = handleGenerateQuiz;
     }
 
     function isYouTube(url) {
@@ -334,8 +404,8 @@
     function renderPlayer(url) {
         const container = document.getElementById('player');
         container.innerHTML = '';
-        if (!url || url.trim() === '' || url.includes('REEMPLAZA')) {
-            container.innerHTML = `<div style="display: grid; place-items: center; height: 100%; color: #94a3b8; font-size: 14px; padding: 1rem; text-align: center;">Configura CONFIG.videoUrl con tu enlace de YouTube.</div>`;
+        if (!url || url.trim() === '') {
+            container.innerHTML = `<div style="display: grid; place-items: center; height: 100%; color: #94a3b8; font-size: 14px; padding: 1rem; text-align: center;">Configura la URL del video.</div>`;
             return;
         }
         if (isYouTube(url)) {
@@ -351,7 +421,7 @@
         } else {
             const video = document.createElement('video');
             video.controls = true; video.playsInline = true; video.preload = 'metadata'; video.src = url;
-            video.setAttribute('aria-label', CONFIG.titulo);
+            video.setAttribute('aria-label', currentVideo.titulo);
             container.appendChild(video);
         }
     }
@@ -380,7 +450,6 @@
       document.body.removeChild(textArea);
     }
 
-    // --- LÓGICA DEL CÓDIGO QR ---
     function initQrCodeModal() {
         const openModalBtn = document.getElementById('share-qr');
         const qrModal = document.getElementById('qr-modal');
@@ -419,7 +488,6 @@
         });
     }
 
-    // --- FUNCIONES DE LA API DE GEMINI ---
     const geminiOutput = document.getElementById('gemini-output');
 
     function showLoader(message) {
@@ -458,12 +526,10 @@
 
     async function handleGeneratePoints() {
         showLoader('Generando puntos clave...');
-        const prompt = `Eres un asistente educativo. Basado en el siguiente texto, extrae los 3 puntos clave más importantes y preséntalos como una lista simple con viñetas (usando Markdown con *). El texto es: "${CONFIG.descripcion}"`;
+        const prompt = `Eres un asistente educativo. Basado en el siguiente texto, extrae los 3 puntos clave más importantes y preséntalos como una lista simple con viñetas (usando Markdown con *). El texto es: "${currentVideo.descripcion}"`;
         const response = await callGeminiAPI(prompt);
         geminiOutput.innerHTML = `<h3>Puntos Clave</h3>${formatMarkdownList(response)}`;
     }
-
-
 
     async function handleGenerateQuiz() {
         showLoader('Creando cuestionario...');
@@ -471,7 +537,7 @@
             "type": "OBJECT",
             "properties": { "questions": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { "question_text": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "correct_answer_index": { "type": "NUMBER" } }, "required": ["question_text", "options", "correct_answer_index"] } } }
         };
-        const prompt = `Crea un cuestionario de 2 preguntas de opción múltiple (con 3 opciones cada una) para evaluar la comprensión del siguiente texto: "${CONFIG.descripcion}". Devuelve el resultado como un objeto JSON que siga el esquema proporcionado.`;
+        const prompt = `Crea un cuestionario de 2 preguntas de opción múltiple (con 3 opciones cada una) para evaluar la comprensión del siguiente texto: "${currentVideo.descripcion}". Devuelve el resultado como un objeto JSON que siga el esquema proporcionado.`;
         const generationConfig = { responseMimeType: "application/json", responseSchema: quizSchema };
         
         const response = await callGeminiAPI(prompt, generationConfig);
